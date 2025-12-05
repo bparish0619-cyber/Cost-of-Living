@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cost of Living Comparison Tool</title>
+    
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    
+    <!-- Babel for JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Custom Scrollbar for better aesthetics */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background-color: #cbd5e1;
+            border-radius: 20px;
+        }
+        .dark .custom-scrollbar::-webkit-scrollbar-thumb {
+            background-color: #475569;
+        }
+        .chart-bar-animate {
+            transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-900 dark:bg-gray-900 dark:text-gray-100 transition-colors duration-200">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useMemo } = React;
+
+        // --- ICONS ---
+        const Icons = {
+            Moon: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>,
+            Sun: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>,
+            Download: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>,
+            BarChart: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><line x1="12" x2="12" y1="20" y2="10"/><line x1="18" x2="18" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="16"/></svg>,
+            Users: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>,
+            Briefcase: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><rect width="20" height="14" x="2" y="7" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>,
+            MapPin: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>,
+            Check: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><polyline points="20 6 9 17 4 12"/></svg>,
+            PieChart: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>
+        };
+
+        // --- DATA ---
+        const LOCATIONS = [
+            "Taylor County, TX",
+            "Pulaski County, AR",
+            "Bexar County, TX",
+            "Orleans Parish, LA",
+            "Ottawa County, MI",
+            "Harrison County, MS",
+            "Pima County, AZ"
+        ];
+
+        // Format: [Food, ChildCare, Medical, Housing, Transportation, Misc(Civic+Net+Other), Taxes]
+        // Misc = Civic + Internet + Other
+        const EXPENSE_DATA = {
+            "Taylor County, TX": {
+                "1A": [
+                    [3868, 0, 3188, 11772, 9429, 2589+1380+3770, 5392], // 0 kids
+                    [5688, 6671, 9314, 15052, 10912, 4557+1380+7242, 6796], // 1 kid
+                    [8521, 13171, 9386, 15052, 13745, 5031+1380+7587, 6761], // 2 kids
+                    [11337, 17974, 9462, 19592, 15815, 6450+1380+9120, 9696]  // 3 kids
+                ],
+                "2A1W": [
+                    [7092, 0, 7377, 11847, 10912, 4557+1962+7242, 6509],
+                    [8815, 0, 10275, 15052, 13745, 5031+1962+8033, 6864],
+                    [11339, 0, 10546, 15052, 15815, 6450+1962+9120, 6293],
+                    [13832, 0, 10848, 19592, 17545, 7156+1962+10117, 6413]
+                ],
+                "2ABW": [
+                    [7092, 0, 7377, 11847, 10912, 4557+1962+7242, 6509],
+                    [8815, 6671, 10275, 15052, 13745, 5031+1962+8033, 7601],
+                    [11339, 13171, 10546, 15052, 15815, 6450+1962+9120, 7731],
+                    [13832, 17974, 10848, 19592, 17545, 7156+1962+10117, 8828]
+                ]
+            },
+            "Pulaski County, AR": {
+                "1A": [
+                    [4119, 0, 2956, 11019, 9713, 2589+1510+3770, 6512],
+                    [6058, 10608, 7344, 12820, 11241, 4557+1510+7242, 9378],
+                    [9074, 21373, 7417, 12820, 14160, 5031+1510+7587, 11418],
+                    [12072, 27494, 7493, 17093, 16293, 6450+1510+9120, 16386]
+                ],
+                "2A1W": [
+                    [7552, 0, 6469, 11081, 11241, 4557+2092+7242, 9150],
+                    [9387, 0, 8306, 12820, 14160, 5031+2092+8033, 8585],
+                    [12075, 0, 8577, 12820, 16293, 6450+2092+9120, 8491],
+                    [14730, 0, 8879, 17093, 18074, 7156+2092+10117, 9222]
+                ],
+                "2ABW": [
+                    [7552, 0, 6469, 11081, 11241, 4557+2092+7242, 7319],
+                    [9387, 10608, 8306, 12820, 14160, 5031+2092+8033, 9940],
+                    [12075, 21373, 8577, 12820, 16293, 6450+2092+9120, 11779],
+                    [14730, 27494, 8879, 17093, 18074, 7156+2092+10117, 14594]
+                ]
+            },
+            "Bexar County, TX": {
+                "1A": [
+                    [3663, 0, 2987, 13201, 9890, 2589+1440+3770, 5722],
+                    [5386, 9123, 8411, 17863, 11445, 4557+1440+7242, 7743],
+                    [8069, 18018, 8483, 17863, 14417, 5031+1440+7587, 8628],
+                    [10735, 24645, 8559, 22695, 16589, 6450+1440+9120, 12492]
+                ],
+                "2A1W": [
+                    [6715, 0, 6782, 14650, 11445, 4557+2022+7242, 7002],
+                    [8347, 0, 9372, 17863, 14417, 5031+2022+8033, 7307],
+                    [10737, 0, 9644, 17863, 16589, 6450+2022+9120, 6729],
+                    [13098, 0, 9945, 22695, 18403, 7156+2022+10117, 6898]
+                ],
+                "2ABW": [
+                    [6715, 0, 6782, 14650, 11445, 4557+2022+7242, 7002],
+                    [8347, 9123, 9372, 17863, 14417, 5031+2022+8033, 8542],
+                    [10737, 18018, 9644, 17863, 16589, 6450+2022+9120, 9153],
+                    [13098, 24645, 9945, 22695, 18403, 7156+2022+10117, 10571]
+                ]
+            },
+            "Orleans Parish, LA": {
+                "1A": [
+                    [4736, 0, 2893, 12897, 8208, 2589+1563+3770, 6562],
+                    [6964, 8268, 8348, 17798, 9498, 4557+1563+7242, 9591],
+                    [10431, 16254, 8421, 17798, 11965, 5031+1563+7587, 11124],
+                    [13878, 21962, 8497, 22747, 13767, 6450+1563+9120, 15887]
+                ],
+                "2A1W": [
+                    [8682, 0, 6792, 14884, 9498, 4557+2145+7242, 8420],
+                    [10791, 0, 9309, 17798, 11965, 5031+2145+8033, 9114],
+                    [13881, 0, 9581, 17798, 13767, 6450+2145+9120, 8943],
+                    [16933, 0, 9882, 22747, 15272, 7156+2145+10117, 9694]
+                ],
+                "2ABW": [
+                    [8682, 0, 6792, 14884, 9498, 4557+2145+7242, 8420],
+                    [10791, 8268, 9309, 17798, 11965, 5031+2145+8033, 10444],
+                    [13881, 16254, 9581, 17798, 13767, 6450+2145+9120, 11593],
+                    [16933, 21962, 9882, 22747, 15272, 7156+2145+10117, 13714]
+                ]
+            },
+            "Ottawa County, MI": {
+                "1A": [
+                    [4211, 0, 3308, 11484, 11575, 3126+1505+4112, 6702],
+                    [6192, 9374, 7856, 16424, 13396, 5504+1505+7900, 10813],
+                    [9275, 16924, 7937, 16424, 16874, 6077+1505+8276, 12313],
+                    [12340, 22848, 8021, 21068, 19416, 7791+1505+9949, 16908]
+                ],
+                "2A1W": [
+                    [7720, 0, 6934, 14424, 13396, 5504+2086+7900, 9177],
+                    [9595, 0, 8924, 16424, 16874, 6077+2086+8763, 10363],
+                    [12342, 0, 9226, 16424, 19416, 7791+2086+9949, 10155],
+                    [15056, 0, 9560, 21068, 21539, 8643+2086+11037, 10760]
+                ],
+                "2ABW": [
+                    [7720, 0, 6934, 14424, 13396, 5504+2086+7900, 9177],
+                    [9595, 9374, 8924, 16424, 16874, 6077+2086+8763, 12062],
+                    [12342, 16924, 9226, 16424, 19416, 7791+2086+9949, 13102],
+                    [15056, 22848, 9560, 21068, 21539, 8643+2086+11037, 15236]
+                ]
+            },
+            "Harrison County, MS": {
+                "1A": [
+                    [4131, 0, 3223, 9348, 10049, 2589+1534+3770, 6127],
+                    [6074, 7866, 7656, 13631, 11630, 4557+1534+7242, 8739],
+                    [9099, 15047, 7728, 13631, 14650, 5031+1534+7587, 9565],
+                    [12106, 19626, 7804, 17646, 16856, 6450+1534+9120, 13202]
+                ],
+                "2A1W": [
+                    [7573, 0, 6358, 10934, 11630, 4557+2116+7242, 7744],
+                    [9413, 0, 8617, 13631, 14650, 5031+2116+8033, 8416],
+                    [12108, 0, 8888, 13631, 16856, 6450+2116+9120, 8219],
+                    [14771, 0, 9190, 17646, 18699, 7156+2116+10117, 8749]
+                ],
+                "2ABW": [
+                    [7573, 0, 6358, 10934, 11630, 4557+2116+7242, 7435],
+                    [9413, 7866, 8617, 13631, 14650, 5031+2116+8033, 9494],
+                    [12108, 15047, 8888, 13631, 16856, 6450+2116+9120, 10510],
+                    [14771, 19626, 9190, 17646, 18699, 7156+2116+10117, 12208]
+                ]
+            },
+            "Pima County, AZ": {
+                "1A": [
+                    [4085, 0, 2549, 11339, 9045, 3567+1774+4749, 6247],
+                    [6007, 10406, 7414, 16545, 10468, 6314+1774+9123, 9422],
+                    [8999, 20812, 7487, 16545, 13186, 6971+1774+9558, 11514],
+                    [11972, 28395, 7564, 23185, 15172, 8938+1774+11490, 17241]
+                ],
+                "2A1W": [
+                    [7489, 0, 5931, 12677, 10468, 6314+2380+9123, 7915],
+                    [9309, 0, 8381, 16545, 13186, 6971+2380+10121, 8611],
+                    [11974, 0, 8654, 16545, 15172, 8938+2380+11490, 8328],
+                    [14608, 0, 8958, 23185, 16831, 9915+2380+12746, 8245]
+                ],
+                "2ABW": [
+                    [7489, 0, 5931, 12677, 10468, 6314+2380+9123, 7915],
+                    [9309, 10406, 8381, 16545, 13186, 6971+2380+10121, 10387],
+                    [11974, 20812, 8654, 16545, 15172, 8938+2380+11490, 11933],
+                    [14608, 28395, 8958, 23185, 16831, 9915+2380+12746, 15357]
+                ]
+            }
+        };
+
+        const SALARY_DATA = {
+            "Management": { "Taylor County, TX": 128150, "Pulaski County, AR": 98060, "Bexar County, TX": 128150, "Orleans Parish, LA": 114250, "Ottawa County, MI": 124330, "Harrison County, MS": 96560, "Pima County, AZ": 123820 },
+            "Business & Financial Operations": { "Taylor County, TX": 83710, "Pulaski County, AR": 72000, "Bexar County, TX": 83710, "Orleans Parish, LA": 73510, "Ottawa County, MI": 81750, "Harrison County, MS": 70000, "Pima County, AZ": 82350 },
+            "Computer & Mathematical": { "Taylor County, TX": 105070, "Pulaski County, AR": 84820, "Bexar County, TX": 105070, "Orleans Parish, LA": 95500, "Ottawa County, MI": 93980, "Harrison County, MS": 76010, "Pima County, AZ": 103720 },
+            "Education, Training, & Library": { "Taylor County, TX": 61140, "Pulaski County, AR": 55020, "Bexar County, TX": 61140, "Orleans Parish, LA": 56650, "Ottawa County, MI": 61830, "Harrison County, MS": 48900, "Pima County, AZ": 60140 },
+            "Healthcare Practitioners & Technical": { "Taylor County, TX": 94540, "Pulaski County, AR": 78010, "Bexar County, TX": 94540, "Orleans Parish, LA": 83450, "Ottawa County, MI": 95730, "Harrison County, MS": 80450, "Pima County, AZ": 102840 },
+            "Office & Administrative Support": { "Taylor County, TX": 44980, "Pulaski County, AR": 40860, "Bexar County, TX": 44980, "Orleans Parish, LA": 40400, "Ottawa County, MI": 46170, "Harrison County, MS": 38550, "Pima County, AZ": 47300 },
+            "Construction & Extraction": { "Taylor County, TX": 52250, "Pulaski County, AR": 46400, "Bexar County, TX": 52250, "Orleans Parish, LA": 52760, "Ottawa County, MI": 60600, "Harrison County, MS": 48450, "Pima County, AZ": 56490 },
+            "Food Preparation & Serving Related": { "Taylor County, TX": 29730, "Pulaski County, AR": 29130, "Bexar County, TX": 29730, "Orleans Parish, LA": 27420, "Ottawa County, MI": 33770, "Harrison County, MS": 25640, "Pima County, AZ": 33890 }
+        };
+
+        const OCCUPATIONS = Object.keys(SALARY_DATA).sort();
+        const EXPENSE_CATEGORIES = [
+            { name: "Food", color: "bg-emerald-400 dark:bg-emerald-500" },
+            { name: "Child Care", color: "bg-purple-400 dark:bg-purple-500" },
+            { name: "Medical", color: "bg-rose-400 dark:bg-rose-500" },
+            { name: "Housing", color: "bg-blue-400 dark:bg-blue-500" },
+            { name: "Transportation", color: "bg-amber-400 dark:bg-amber-500" },
+            { name: "Misc & Civic", color: "bg-gray-400 dark:bg-gray-500" },
+            { name: "Taxes", color: "bg-indigo-400 dark:bg-indigo-500" }
+        ];
+
+        // --- COMPONENTS ---
+
+        const ExpenseBreakdown = ({ location, familyKey, children }) => {
+            const expenses = EXPENSE_DATA[location]?.[familyKey]?.[Math.min(children, 3)] || [];
+            if (!expenses.length) return null;
+
+            const total = expenses.reduce((a, b) => a + b, 0);
+
+            return (
+                <div className="mt-4">
+                    <div className="flex justify-between items-end mb-2">
+                        <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Annual Expense Breakdown</span>
+                        <span className="text-xs text-gray-400">Total: ${total.toLocaleString()}</span>
+                    </div>
+                    
+                    {/* Stacked Bar */}
+                    <div className="flex h-6 w-full rounded-md overflow-hidden bg-gray-100 dark:bg-gray-700">
+                        {expenses.map((amount, idx) => {
+                            const pct = (amount / total) * 100;
+                            if (pct < 1) return null; // Hide tiny segments
+                            return (
+                                <div 
+                                    key={idx}
+                                    className={`h-full ${EXPENSE_CATEGORIES[idx].color} hover:opacity-80 transition-opacity relative group`}
+                                    style={{ width: `${pct}%` }}
+                                >
+                                    <div className="opacity-0 group-hover:opacity-100 absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-xs rounded py-1 px-2 whitespace-nowrap z-10 pointer-events-none">
+                                        {EXPENSE_CATEGORIES[idx].name}: ${amount.toLocaleString()} ({Math.round(pct)}%)
+                                        <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+
+                    {/* Legend */}
+                    <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-2 text-[10px] text-gray-600 dark:text-gray-400">
+                        {expenses.map((amount, idx) => (
+                            <div key={idx} className="flex items-center gap-1.5">
+                                <div className={`w-2 h-2 rounded-full ${EXPENSE_CATEGORIES[idx].color}`}></div>
+                                <span className="truncate">{EXPENSE_CATEGORIES[idx].name}: <strong>${amount.toLocaleString()}</strong></span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            );
+        };
+
+        const App = () => {
+            const [darkMode, setDarkMode] = useState(false);
+            const [selectedLocations, setSelectedLocations] = useState([LOCATIONS[0], LOCATIONS[1]]);
+            const [adults, setAdults] = useState(1);
+            const [working, setWorking] = useState(1);
+            const [children, setChildren] = useState(0);
+            const [occupation, setOccupation] = useState("Custom");
+            const [customSalary, setCustomSalary] = useState(50000);
+            const [showExpenses, setShowExpenses] = useState(true);
+
+            // Dark Mode Logic
+            useEffect(() => {
+                const isDark = localStorage.getItem('theme') === 'dark';
+                setDarkMode(isDark);
+                if (isDark) document.documentElement.classList.add('dark');
+            }, []);
+
+            const toggleTheme = () => {
+                const newMode = !darkMode;
+                setDarkMode(newMode);
+                if (newMode) {
+                    document.documentElement.classList.add('dark');
+                    localStorage.setItem('theme', 'dark');
+                } else {
+                    document.documentElement.classList.remove('dark');
+                    localStorage.setItem('theme', 'light');
+                }
+            };
+
+            const toggleLocation = (loc) => {
+                if (selectedLocations.includes(loc)) {
+                    if (selectedLocations.length > 1) {
+                        setSelectedLocations(selectedLocations.filter(l => l !== loc));
+                    }
+                } else {
+                    if (selectedLocations.length < 3) {
+                        setSelectedLocations([...selectedLocations, loc]);
+                    }
+                }
+            };
+
+            const familyKey = useMemo(() => {
+                if (adults === 1) return "1A";
+                if (adults === 2 && working === 1) return "2A1W";
+                return "2ABW";
+            }, [adults, working]);
+
+            const getSalary = (loc) => {
+                if (occupation === "Custom") return customSalary;
+                return SALARY_DATA[occupation][loc] || 0;
+            };
+
+            const getCost = (loc) => {
+                // Cost is sum of expenses including taxes (which matches Required Income Before Taxes)
+                const expenses = EXPENSE_DATA[loc][familyKey][Math.min(children, 3)];
+                return expenses.reduce((a, b) => a + b, 0);
+            };
+
+            const downloadHtml = () => {
+                const htmlContent = document.documentElement.outerHTML;
+                const blob = new Blob([htmlContent], { type: 'text/html' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'cost_of_living_calculator.html';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            };
+
+            return (
+                <div className="min-h-screen p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto font-sans">
+                    {/* Header */}
+                    <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 pb-4 border-b border-gray-200 dark:border-gray-700 gap-4">
+                        <div>
+                            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
+                                <Icons.BarChart className="w-8 h-8 text-indigo-600 dark:text-indigo-400" />
+                                Cost of Living Explorer
+                            </h1>
+                            <p className="mt-1 text-gray-500 dark:text-gray-400 text-sm">
+                                Compare income requirements, salaries, and detailed expenses.
+                            </p>
+                        </div>
+                        <div className="flex items-center gap-3 self-end sm:self-auto">
+                            <button
+                                onClick={downloadHtml}
+                                className="flex items-center gap-2 px-4 py-2 text-sm font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition-colors shadow-sm"
+                            >
+                                <Icons.Download className="w-4 h-4" />
+                                <span className="hidden sm:inline">Save Offline</span>
+                            </button>
+                            <button
+                                onClick={toggleTheme}
+                                className="p-2.5 rounded-lg bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-yellow-400 transition-colors shadow-sm"
+                                aria-label="Toggle Theme"
+                            >
+                                {darkMode ? <Icons.Sun className="w-5 h-5" /> : <Icons.Moon className="w-5 h-5" />}
+                            </button>
+                        </div>
+                    </header>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
+                        
+                        {/* Sidebar Controls */}
+                        <div className="lg:col-span-4 space-y-6">
+                            
+                            {/* Family Config */}
+                            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-5">
+                                <h2 className="text-lg font-semibold mb-4 flex items-center gap-2 text-gray-900 dark:text-white">
+                                    <Icons.Users className="w-5 h-5 text-indigo-500" />
+                                    Family Setup
+                                </h2>
+                                
+                                <div className="space-y-4">
+                                    <div>
+                                        <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">Adults</label>
+                                        <div className="grid grid-cols-2 gap-2">
+                                            {[1, 2].map(num => (
+                                                <button
+                                                    key={num}
+                                                    onClick={() => { setAdults(num); if(num===1) setWorking(1); }}
+                                                    className={`py-2 text-sm font-medium rounded-lg border transition-all ${
+                                                        adults === num 
+                                                            ? 'bg-indigo-50 dark:bg-indigo-900/30 border-indigo-500 text-indigo-700 dark:text-indigo-300' 
+                                                            : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
+                                                    }`}
+                                                >
+                                                    {num} Adult{num > 1 && 's'}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {adults === 2 && (
+                                        <div className="animate-fade-in">
+                                            <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">Working Adults</label>
+                                            <div className="grid grid-cols-2 gap-2">
+                                                {[1, 2].map(num => (
+                                                    <button
+                                                        key={num}
+                                                        onClick={() => setWorking(num)}
+                                                        className={`py-2 text-sm font-medium rounded-lg border transition-all ${
+                                                            working === num 
+                                                                ? 'bg-indigo-50 dark:bg-indigo-900/30 border-indigo-500 text-indigo-700 dark:text-indigo-300' 
+                                                                : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
+                                                        }`}
+                                                    >
+                                                        {num} Working
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    <div>
+                                        <div className="flex justify-between mb-2">
+                                            <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Children</label>
+                                            <span className="text-sm font-bold text-indigo-600 dark:text-indigo-400">{children}</span>
+                                        </div>
+                                        <input 
+                                            type="range" min="0" max="3" step="1" 
+                                            value={children}
+                                            onChange={(e) => setChildren(parseInt(e.target.value))}
+                                            className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                                        />
+                                        <div className="flex justify-between text-xs text-gray-400 mt-1 px-1">
+                                            <span>0</span><span>1</span><span>2</span><span>3</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Job Config */}
+                            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-5">
+                                <h2 className="text-lg font-semibold mb-4 flex items-center gap-2 text-gray-900 dark:text-white">
+                                    <Icons.Briefcase className="w-5 h-5 text-emerald-500" />
+                                    Job & Salary
+                                </h2>
+                                
+                                <div className="space-y-4">
+                                    <div>
+                                        <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">Sector</label>
+                                        <select 
+                                            value={occupation}
+                                            onChange={(e) => setOccupation(e.target.value)}
+                                            className="w-full rounded-lg border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 p-2.5"
+                                        >
+                                            <option value="Custom">Custom Salary Input</option>
+                                            {OCCUPATIONS.map(occ => (
+                                                <option key={occ} value={occ}>{occ}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    {occupation === "Custom" && (
+                                        <div>
+                                            <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">Annual Salary</label>
+                                            <div className="relative">
+                                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
+                                                <input
+                                                    type="number"
+                                                    value={customSalary}
+                                                    onChange={(e) => setCustomSalary(Number(e.target.value))}
+                                                    className="w-full pl-7 rounded-lg border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 p-2.5"
+                                                />
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Location Config */}
+                            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-5">
+                                <div className="flex justify-between items-center mb-4">
+                                    <h2 className="text-lg font-semibold flex items-center gap-2 text-gray-900 dark:text-white">
+                                        <Icons.MapPin className="w-5 h-5 text-rose-500" />
+                                        Locations
+                                    </h2>
+                                    <span className="text-xs font-medium text-gray-500 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">Select up to 3</span>
+                                </div>
+                                <div className="space-y-2 max-h-60 overflow-y-auto pr-1 custom-scrollbar">
+                                    {LOCATIONS.map(loc => {
+                                        const isSelected = selectedLocations.includes(loc);
+                                        const isDisabled = !isSelected && selectedLocations.length >= 3;
+                                        return (
+                                            <button
+                                                key={loc}
+                                                onClick={() => toggleLocation(loc)}
+                                                disabled={isDisabled}
+                                                className={`w-full text-left px-3 py-2.5 rounded-lg text-sm transition-all flex justify-between items-center ${
+                                                    isSelected 
+                                                        ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 ring-1 ring-indigo-200 dark:ring-indigo-800' 
+                                                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+                                                } ${isDisabled ? 'opacity-40 cursor-not-allowed' : ''}`}
+                                            >
+                                                <span>{loc}</span>
+                                                {isSelected && <Icons.Check className="w-4 h-4 text-indigo-500" />}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Main Analysis */}
+                        <div className="lg:col-span-8 space-y-6">
+                            
+                            {/* Comparison Cards */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                                {selectedLocations.map(loc => {
+                                    const required = getCost(loc);
+                                    const salary = getSalary(loc);
+                                    const surplus = salary - required;
+                                    const isSurplus = surplus >= 0;
+
+                                    return (
+                                        <div key={loc} className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-5 relative overflow-hidden flex flex-col">
+                                            <div className={`absolute top-0 left-0 w-1.5 h-full ${isSurplus ? 'bg-emerald-500' : 'bg-rose-500'}`}></div>
+                                            
+                                            <h3 className="font-bold text-gray-900 dark:text-white truncate mb-4 pl-2" title={loc}>{loc}</h3>
+                                            
+                                            <div className="space-y-4 mb-2 flex-grow pl-2">
+                                                <div>
+                                                    <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide font-semibold mb-0.5">Required Income</p>
+                                                    <p className="text-2xl font-bold text-gray-900 dark:text-white tracking-tight">
+                                                        ${required.toLocaleString()}
+                                                    </p>
+                                                    <p className="text-[10px] text-gray-400">Pre-tax annual estimate</p>
+                                                </div>
+
+                                                <div>
+                                                    <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide font-semibold mb-0.5">Estimated Salary</p>
+                                                    <p className={`text-xl font-bold tracking-tight ${isSurplus ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                                                        ${salary.toLocaleString()}
+                                                    </p>
+                                                </div>
+                                            </div>
+
+                                            <div className="pt-4 border-t border-gray-100 dark:border-gray-700 pl-2">
+                                                <div className="flex justify-between items-center mb-2">
+                                                    <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                                                        Net Balance
+                                                    </span>
+                                                    <span className={`text-sm font-bold ${isSurplus ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                                                        {isSurplus ? '+' : ''}{surplus.toLocaleString()}
+                                                    </span>
+                                                </div>
+                                                
+                                                {/* Mini Bar */}
+                                                <div className="w-full bg-gray-100 dark:bg-gray-700 rounded-full h-1.5">
+                                                    <div 
+                                                        className={`h-1.5 rounded-full transition-all duration-500 ${isSurplus ? 'bg-emerald-500' : 'bg-rose-500'}`} 
+                                                        style={{width: `${Math.min((Math.abs(surplus) / required) * 100, 100)}%`}}
+                                                    ></div>
+                                                </div>
+                                            </div>
+
+                                            {/* Expense Breakdown */}
+                                            {showExpenses && <ExpenseBreakdown location={loc} familyKey={familyKey} children={children} />}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+
+                            {/* Detailed Visualization */}
+                            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                                <div className="flex justify-between items-center mb-6">
+                                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                                        <Icons.PieChart className="w-5 h-5 text-indigo-500" />
+                                        Comparison Visualization
+                                    </h3>
+                                    <button 
+                                        onClick={() => setShowExpenses(!showExpenses)}
+                                        className="text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 font-medium"
+                                    >
+                                        {showExpenses ? "Hide Details" : "Show Expense Details"}
+                                    </button>
+                                </div>
+                                
+                                <div className="space-y-6">
+                                    {selectedLocations.map(loc => {
+                                        const required = getCost(loc);
+                                        const salary = getSalary(loc);
+                                        const maxVal = Math.max(...selectedLocations.map(l => Math.max(getCost(l), getSalary(l)))) * 1.15;
+                                        const reqPct = (required / maxVal) * 100;
+                                        const salPct = (salary / maxVal) * 100;
+
+                                        return (
+                                            <div key={loc} className="relative group">
+                                                <div className="flex justify-between text-sm mb-1.5">
+                                                    <span className="font-semibold text-gray-700 dark:text-gray-200">{loc}</span>
+                                                </div>
+                                                
+                                                <div className="relative h-20 bg-gray-50 dark:bg-gray-900/50 rounded-lg border border-gray-100 dark:border-gray-700 p-3 flex flex-col justify-center space-y-3">
+                                                    
+                                                    {/* Cost Bar */}
+                                                    <div className="flex items-center">
+                                                        <div className="w-16 text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wider font-medium hidden sm:block">Needed</div>
+                                                        <div className="flex-grow">
+                                                            <div 
+                                                                className="h-3 bg-gray-400/80 dark:bg-gray-600 rounded-r-full relative chart-bar-animate flex items-center"
+                                                                style={{width: `${reqPct}%`}}
+                                                            >
+                                                                <span className="absolute right-0 translate-x-full pl-2 text-xs font-bold text-gray-500 dark:text-gray-400">
+                                                                    ${required.toLocaleString()}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Salary Bar */}
+                                                    <div className="flex items-center">
+                                                        <div className="w-16 text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wider font-medium hidden sm:block">Income</div>
+                                                        <div className="flex-grow">
+                                                            <div 
+                                                                className={`h-3 rounded-r-full relative chart-bar-animate flex items-center ${salary >= required ? 'bg-emerald-500' : 'bg-rose-500'}`}
+                                                                style={{width: `${salPct}%`}}
+                                                            >
+                                                                <span className={`absolute right-0 translate-x-full pl-2 text-xs font-bold ${salary >= required ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                                                                    ${salary.toLocaleString()}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                    
+                    <footer className="mt-12 text-center border-t border-gray-200 dark:border-gray-800 pt-8 pb-4">
+                        <p className="text-gray-400 dark:text-gray-600 text-xs">
+                            Data Source: 2025 Living Wage Calculation Estimates (MIT). Figures represent gross annual income before taxes.
+                        </p>
+                    </footer>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
