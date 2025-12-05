@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cost of Living Comparison Tool</title>
+    <title>Cost of Living & Salary Equivalence Tool</title>
     
     <!-- React & ReactDOM -->
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
@@ -32,23 +32,13 @@
     </script>
 
     <style>
-        /* Custom Scrollbar for better aesthetics */
-        .custom-scrollbar::-webkit-scrollbar {
-            width: 6px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-            background: transparent;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-            background-color: #cbd5e1;
-            border-radius: 20px;
-        }
-        .dark .custom-scrollbar::-webkit-scrollbar-thumb {
-            background-color: #475569;
-        }
-        .chart-bar-animate {
-            transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-        }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 20px; }
+        .dark .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #475569; }
+        .chart-bar-animate { transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
+        .fade-in { animation: fadeIn 0.3s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body class="bg-gray-50 text-gray-900 dark:bg-gray-900 dark:text-gray-100 transition-colors duration-200">
@@ -67,7 +57,10 @@
             Briefcase: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><rect width="20" height="14" x="2" y="7" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>,
             MapPin: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>,
             Check: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><polyline points="20 6 9 17 4 12"/></svg>,
-            PieChart: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>
+            PieChart: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>,
+            Scale: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="M7 21h10"/><path d="M12 3v18"/><path d="M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2"/></svg>,
+            Info: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>,
+            ArrowRight: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
         };
 
         // --- DATA ---
@@ -82,147 +75,41 @@
         ];
 
         // Format: [Food, ChildCare, Medical, Housing, Transportation, Misc(Civic+Net+Other), Taxes]
-        // Misc = Civic + Internet + Other
         const EXPENSE_DATA = {
             "Taylor County, TX": {
-                "1A": [
-                    [3868, 0, 3188, 11772, 9429, 2589+1380+3770, 5392], // 0 kids
-                    [5688, 6671, 9314, 15052, 10912, 4557+1380+7242, 6796], // 1 kid
-                    [8521, 13171, 9386, 15052, 13745, 5031+1380+7587, 6761], // 2 kids
-                    [11337, 17974, 9462, 19592, 15815, 6450+1380+9120, 9696]  // 3 kids
-                ],
-                "2A1W": [
-                    [7092, 0, 7377, 11847, 10912, 4557+1962+7242, 6509],
-                    [8815, 0, 10275, 15052, 13745, 5031+1962+8033, 6864],
-                    [11339, 0, 10546, 15052, 15815, 6450+1962+9120, 6293],
-                    [13832, 0, 10848, 19592, 17545, 7156+1962+10117, 6413]
-                ],
-                "2ABW": [
-                    [7092, 0, 7377, 11847, 10912, 4557+1962+7242, 6509],
-                    [8815, 6671, 10275, 15052, 13745, 5031+1962+8033, 7601],
-                    [11339, 13171, 10546, 15052, 15815, 6450+1962+9120, 7731],
-                    [13832, 17974, 10848, 19592, 17545, 7156+1962+10117, 8828]
-                ]
+                "1A":   [[3868, 0, 3188, 11772, 9429, 7739, 5392], [5688, 6671, 9314, 15052, 10912, 13179, 6796], [8521, 13171, 9386, 15052, 13745, 13998, 6761], [11337, 17974, 9462, 19592, 15815, 16950, 9696]],
+                "2A1W": [[7092, 0, 7377, 11847, 10912, 13761, 6509], [8815, 0, 10275, 15052, 13745, 15024, 6864], [11339, 0, 10546, 15052, 15815, 17532, 6293], [13832, 0, 10848, 19592, 17545, 19235, 6413]],
+                "2ABW": [[7092, 0, 7377, 11847, 10912, 13761, 6509], [8815, 6671, 10275, 15052, 13745, 15024, 7601], [11339, 13171, 10546, 15052, 15815, 17532, 7731], [13832, 17974, 10848, 19592, 17545, 19235, 8828]]
             },
             "Pulaski County, AR": {
-                "1A": [
-                    [4119, 0, 2956, 11019, 9713, 2589+1510+3770, 6512],
-                    [6058, 10608, 7344, 12820, 11241, 4557+1510+7242, 9378],
-                    [9074, 21373, 7417, 12820, 14160, 5031+1510+7587, 11418],
-                    [12072, 27494, 7493, 17093, 16293, 6450+1510+9120, 16386]
-                ],
-                "2A1W": [
-                    [7552, 0, 6469, 11081, 11241, 4557+2092+7242, 9150],
-                    [9387, 0, 8306, 12820, 14160, 5031+2092+8033, 8585],
-                    [12075, 0, 8577, 12820, 16293, 6450+2092+9120, 8491],
-                    [14730, 0, 8879, 17093, 18074, 7156+2092+10117, 9222]
-                ],
-                "2ABW": [
-                    [7552, 0, 6469, 11081, 11241, 4557+2092+7242, 7319],
-                    [9387, 10608, 8306, 12820, 14160, 5031+2092+8033, 9940],
-                    [12075, 21373, 8577, 12820, 16293, 6450+2092+9120, 11779],
-                    [14730, 27494, 8879, 17093, 18074, 7156+2092+10117, 14594]
-                ]
+                "1A":   [[4119, 0, 2956, 11019, 9713, 7869, 6512], [6058, 10608, 7344, 12820, 11241, 13309, 9378], [9074, 21373, 7417, 12820, 14160, 14128, 11418], [12072, 27494, 7493, 17093, 16293, 17080, 16386]],
+                "2A1W": [[7552, 0, 6469, 11081, 11241, 13891, 9150], [9387, 0, 8306, 12820, 14160, 15156, 8585], [12075, 0, 8577, 12820, 16293, 17662, 8491], [14730, 0, 8879, 17093, 18074, 19365, 9222]],
+                "2ABW": [[7552, 0, 6469, 11081, 11241, 13891, 7319], [9387, 10608, 8306, 12820, 14160, 15156, 9940], [12075, 21373, 8577, 12820, 16293, 17662, 11779], [14730, 27494, 8879, 17093, 18074, 19365, 14594]]
             },
             "Bexar County, TX": {
-                "1A": [
-                    [3663, 0, 2987, 13201, 9890, 2589+1440+3770, 5722],
-                    [5386, 9123, 8411, 17863, 11445, 4557+1440+7242, 7743],
-                    [8069, 18018, 8483, 17863, 14417, 5031+1440+7587, 8628],
-                    [10735, 24645, 8559, 22695, 16589, 6450+1440+9120, 12492]
-                ],
-                "2A1W": [
-                    [6715, 0, 6782, 14650, 11445, 4557+2022+7242, 7002],
-                    [8347, 0, 9372, 17863, 14417, 5031+2022+8033, 7307],
-                    [10737, 0, 9644, 17863, 16589, 6450+2022+9120, 6729],
-                    [13098, 0, 9945, 22695, 18403, 7156+2022+10117, 6898]
-                ],
-                "2ABW": [
-                    [6715, 0, 6782, 14650, 11445, 4557+2022+7242, 7002],
-                    [8347, 9123, 9372, 17863, 14417, 5031+2022+8033, 8542],
-                    [10737, 18018, 9644, 17863, 16589, 6450+2022+9120, 9153],
-                    [13098, 24645, 9945, 22695, 18403, 7156+2022+10117, 10571]
-                ]
+                "1A":   [[3663, 0, 2987, 13201, 9890, 7799, 5722], [5386, 9123, 8411, 17863, 11445, 13239, 7743], [8069, 18018, 8483, 17863, 14417, 14058, 8628], [10735, 24645, 8559, 22695, 16589, 17010, 12492]],
+                "2A1W": [[6715, 0, 6782, 14650, 11445, 13821, 7002], [8347, 0, 9372, 17863, 14417, 15084, 7307], [10737, 0, 9644, 17863, 16589, 17592, 6729], [13098, 0, 9945, 22695, 18403, 19295, 6898]],
+                "2ABW": [[6715, 0, 6782, 14650, 11445, 13821, 7002], [8347, 9123, 9372, 17863, 14417, 15084, 8542], [10737, 18018, 9644, 17863, 16589, 17592, 9153], [13098, 24645, 9945, 22695, 18403, 19295, 10571]]
             },
             "Orleans Parish, LA": {
-                "1A": [
-                    [4736, 0, 2893, 12897, 8208, 2589+1563+3770, 6562],
-                    [6964, 8268, 8348, 17798, 9498, 4557+1563+7242, 9591],
-                    [10431, 16254, 8421, 17798, 11965, 5031+1563+7587, 11124],
-                    [13878, 21962, 8497, 22747, 13767, 6450+1563+9120, 15887]
-                ],
-                "2A1W": [
-                    [8682, 0, 6792, 14884, 9498, 4557+2145+7242, 8420],
-                    [10791, 0, 9309, 17798, 11965, 5031+2145+8033, 9114],
-                    [13881, 0, 9581, 17798, 13767, 6450+2145+9120, 8943],
-                    [16933, 0, 9882, 22747, 15272, 7156+2145+10117, 9694]
-                ],
-                "2ABW": [
-                    [8682, 0, 6792, 14884, 9498, 4557+2145+7242, 8420],
-                    [10791, 8268, 9309, 17798, 11965, 5031+2145+8033, 10444],
-                    [13881, 16254, 9581, 17798, 13767, 6450+2145+9120, 11593],
-                    [16933, 21962, 9882, 22747, 15272, 7156+2145+10117, 13714]
-                ]
+                "1A":   [[4736, 0, 2893, 12897, 8208, 7922, 6562], [6964, 8268, 8348, 17798, 9498, 13362, 9591], [10431, 16254, 8421, 17798, 11965, 14181, 11124], [13878, 21962, 8497, 22747, 13767, 17133, 15887]],
+                "2A1W": [[8682, 0, 6792, 14884, 9498, 13944, 8420], [10791, 0, 9309, 17798, 11965, 15209, 9114], [13881, 0, 9581, 17798, 13767, 17715, 8943], [16933, 0, 9882, 22747, 15272, 19418, 9694]],
+                "2ABW": [[8682, 0, 6792, 14884, 9498, 13944, 8420], [10791, 8268, 9309, 17798, 11965, 15209, 10444], [13881, 16254, 9581, 17798, 13767, 17715, 11593], [16933, 21962, 9882, 22747, 15272, 19418, 13714]]
             },
             "Ottawa County, MI": {
-                "1A": [
-                    [4211, 0, 3308, 11484, 11575, 3126+1505+4112, 6702],
-                    [6192, 9374, 7856, 16424, 13396, 5504+1505+7900, 10813],
-                    [9275, 16924, 7937, 16424, 16874, 6077+1505+8276, 12313],
-                    [12340, 22848, 8021, 21068, 19416, 7791+1505+9949, 16908]
-                ],
-                "2A1W": [
-                    [7720, 0, 6934, 14424, 13396, 5504+2086+7900, 9177],
-                    [9595, 0, 8924, 16424, 16874, 6077+2086+8763, 10363],
-                    [12342, 0, 9226, 16424, 19416, 7791+2086+9949, 10155],
-                    [15056, 0, 9560, 21068, 21539, 8643+2086+11037, 10760]
-                ],
-                "2ABW": [
-                    [7720, 0, 6934, 14424, 13396, 5504+2086+7900, 9177],
-                    [9595, 9374, 8924, 16424, 16874, 6077+2086+8763, 12062],
-                    [12342, 16924, 9226, 16424, 19416, 7791+2086+9949, 13102],
-                    [15056, 22848, 9560, 21068, 21539, 8643+2086+11037, 15236]
-                ]
+                "1A":   [[4211, 0, 3308, 11484, 11575, 8743, 6702], [6192, 9374, 7856, 16424, 13396, 14909, 10813], [9275, 16924, 7937, 16424, 16874, 15858, 12313], [12340, 22848, 8021, 21068, 19416, 19245, 16908]],
+                "2A1W": [[7720, 0, 6934, 14424, 13396, 15490, 9177], [9595, 0, 8924, 16424, 16874, 16926, 10363], [12342, 0, 9226, 16424, 19416, 19826, 10155], [15056, 0, 9560, 21068, 21539, 21766, 10760]],
+                "2ABW": [[7720, 0, 6934, 14424, 13396, 15490, 9177], [9595, 9374, 8924, 16424, 16874, 16926, 12062], [12342, 16924, 9226, 16424, 19416, 19826, 13102], [15056, 22848, 9560, 21068, 21539, 21766, 15236]]
             },
             "Harrison County, MS": {
-                "1A": [
-                    [4131, 0, 3223, 9348, 10049, 2589+1534+3770, 6127],
-                    [6074, 7866, 7656, 13631, 11630, 4557+1534+7242, 8739],
-                    [9099, 15047, 7728, 13631, 14650, 5031+1534+7587, 9565],
-                    [12106, 19626, 7804, 17646, 16856, 6450+1534+9120, 13202]
-                ],
-                "2A1W": [
-                    [7573, 0, 6358, 10934, 11630, 4557+2116+7242, 7744],
-                    [9413, 0, 8617, 13631, 14650, 5031+2116+8033, 8416],
-                    [12108, 0, 8888, 13631, 16856, 6450+2116+9120, 8219],
-                    [14771, 0, 9190, 17646, 18699, 7156+2116+10117, 8749]
-                ],
-                "2ABW": [
-                    [7573, 0, 6358, 10934, 11630, 4557+2116+7242, 7435],
-                    [9413, 7866, 8617, 13631, 14650, 5031+2116+8033, 9494],
-                    [12108, 15047, 8888, 13631, 16856, 6450+2116+9120, 10510],
-                    [14771, 19626, 9190, 17646, 18699, 7156+2116+10117, 12208]
-                ]
+                "1A":   [[4131, 0, 3223, 9348, 10049, 7893, 6127], [6074, 7866, 7656, 13631, 11630, 13333, 8739], [9099, 15047, 7728, 13631, 14650, 14152, 9565], [12106, 19626, 7804, 17646, 16856, 17104, 13202]],
+                "2A1W": [[7573, 0, 6358, 10934, 11630, 13915, 7744], [9413, 0, 8617, 13631, 14650, 15180, 8416], [12108, 0, 8888, 13631, 16856, 17686, 8219], [14771, 0, 9190, 17646, 18699, 19389, 8749]],
+                "2ABW": [[7573, 0, 6358, 10934, 11630, 13915, 7435], [9413, 7866, 8617, 13631, 14650, 15180, 9494], [12108, 15047, 8888, 13631, 16856, 17686, 10510], [14771, 19626, 9190, 17646, 18699, 19389, 12208]]
             },
             "Pima County, AZ": {
-                "1A": [
-                    [4085, 0, 2549, 11339, 9045, 3567+1774+4749, 6247],
-                    [6007, 10406, 7414, 16545, 10468, 6314+1774+9123, 9422],
-                    [8999, 20812, 7487, 16545, 13186, 6971+1774+9558, 11514],
-                    [11972, 28395, 7564, 23185, 15172, 8938+1774+11490, 17241]
-                ],
-                "2A1W": [
-                    [7489, 0, 5931, 12677, 10468, 6314+2380+9123, 7915],
-                    [9309, 0, 8381, 16545, 13186, 6971+2380+10121, 8611],
-                    [11974, 0, 8654, 16545, 15172, 8938+2380+11490, 8328],
-                    [14608, 0, 8958, 23185, 16831, 9915+2380+12746, 8245]
-                ],
-                "2ABW": [
-                    [7489, 0, 5931, 12677, 10468, 6314+2380+9123, 7915],
-                    [9309, 10406, 8381, 16545, 13186, 6971+2380+10121, 10387],
-                    [11974, 20812, 8654, 16545, 15172, 8938+2380+11490, 11933],
-                    [14608, 28395, 8958, 23185, 16831, 9915+2380+12746, 15357]
-                ]
+                "1A":   [[4085, 0, 2549, 11339, 9045, 10090, 6247], [6007, 10406, 7414, 16545, 10468, 17211, 9422], [8999, 20812, 7487, 16545, 13186, 18303, 11514], [11972, 28395, 7564, 23185, 15172, 22202, 17241]],
+                "2A1W": [[7489, 0, 5931, 12677, 10468, 17817, 7915], [9309, 0, 8381, 16545, 13186, 19472, 8611], [11974, 0, 8654, 16545, 15172, 22808, 8328], [14608, 0, 8958, 23185, 16831, 24101, 8245]],
+                "2ABW": [[7489, 0, 5931, 12677, 10468, 17817, 7915], [9309, 10406, 8381, 16545, 13186, 19472, 10387], [11974, 20812, 8654, 16545, 15172, 22808, 11933], [14608, 28395, 8958, 23185, 16831, 24101, 15357]]
             }
         };
 
@@ -239,16 +126,77 @@
 
         const OCCUPATIONS = Object.keys(SALARY_DATA).sort();
         const EXPENSE_CATEGORIES = [
-            { name: "Food", color: "bg-emerald-400 dark:bg-emerald-500" },
-            { name: "Child Care", color: "bg-purple-400 dark:bg-purple-500" },
-            { name: "Medical", color: "bg-rose-400 dark:bg-rose-500" },
-            { name: "Housing", color: "bg-blue-400 dark:bg-blue-500" },
-            { name: "Transportation", color: "bg-amber-400 dark:bg-amber-500" },
-            { name: "Misc & Civic", color: "bg-gray-400 dark:bg-gray-500" },
-            { name: "Taxes", color: "bg-indigo-400 dark:bg-indigo-500" }
+            { name: "Food", color: "bg-emerald-400 dark:bg-emerald-500", desc: "Low-cost food plan (USDA June 2024)" },
+            { name: "Child Care", color: "bg-purple-400 dark:bg-purple-500", desc: "Lowest cost provider estimates (Child Care Aware)" },
+            { name: "Medical", color: "bg-rose-400 dark:bg-rose-500", desc: "Insurance + Out-of-pocket (BLS/Marketplace)" },
+            { name: "Housing", color: "bg-blue-400 dark:bg-blue-500", desc: "Fair Market Rents (HUD 2025)" },
+            { name: "Transportation", color: "bg-amber-400 dark:bg-amber-500", desc: "Car purchase, gas, insurance (BLS)" },
+            { name: "Misc & Civic", color: "bg-gray-400 dark:bg-gray-500", desc: "Internet, Civic, Personal Care, Household" },
+            { name: "Taxes", color: "bg-indigo-400 dark:bg-indigo-500", desc: "Federal, State & Payroll taxes" }
         ];
 
         // --- COMPONENTS ---
+
+        const MethodologyModal = ({ isOpen, onClose }) => {
+            if (!isOpen) return null;
+            return (
+                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 fade-in backdrop-blur-sm">
+                    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                        <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center sticky top-0 bg-white dark:bg-gray-800 z-10">
+                            <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                                <Icons.Info className="w-6 h-6 text-indigo-500" />
+                                Data Methodology & Sources
+                            </h2>
+                            <button onClick={onClose} className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 text-2xl">&times;</button>
+                        </div>
+                        <div className="p-6 space-y-6 text-sm text-gray-700 dark:text-gray-300">
+                            <p className="italic bg-gray-50 dark:bg-gray-900/50 p-3 rounded-lg border-l-4 border-indigo-500">
+                                This tool uses the Living Wage Calculator model (MIT) to estimate the cost of living. Estimates are updated as of February 2025.
+                            </p>
+                            
+                            <div className="grid md:grid-cols-2 gap-6">
+                                <div>
+                                    <h3 className="font-semibold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
+                                        <span className="w-2 h-2 rounded-full bg-emerald-500"></span> Food
+                                    </h3>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400">Based on the USDA "Low-Cost Food Plan" (June 2024), adjusted for regional price parity. Assumes all food is prepared at home.</p>
+                                </div>
+                                <div>
+                                    <h3 className="font-semibold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
+                                        <span className="w-2 h-2 rounded-full bg-blue-500"></span> Housing
+                                    </h3>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400">Derived from HUD 2025 Fair Market Rents (FMR). Assumes a 1-bedroom for single adults and 2-bedrooms for families with children, at the 40th percentile cost.</p>
+                                </div>
+                                <div>
+                                    <h3 className="font-semibold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
+                                        <span className="w-2 h-2 rounded-full bg-purple-500"></span> Child Care
+                                    </h3>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400">State-level data from Child Care Aware of America. Assumes lowest-cost reliable care option (often family child care vs centers).</p>
+                                </div>
+                                <div>
+                                    <h3 className="font-semibold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
+                                        <span className="w-2 h-2 rounded-full bg-rose-500"></span> Medical
+                                    </h3>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400">Includes health insurance premiums (Marketplace data) plus out-of-pocket costs derived from the Bureau of Labor Statistics (BLS) Consumer Expenditure Survey.</p>
+                                </div>
+                                <div>
+                                    <h3 className="font-semibold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
+                                        <span className="w-2 h-2 rounded-full bg-amber-500"></span> Transportation
+                                    </h3>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400">Includes car purchase, insurance, gas, and maintenance. Based on data from BLS and insurance industry averages.</p>
+                                </div>
+                                <div>
+                                    <h3 className="font-semibold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
+                                        <span className="w-2 h-2 rounded-full bg-indigo-500"></span> Taxes
+                                    </h3>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400">Includes Federal and State income taxes plus payroll taxes (FICA). Calculated based on the total required income.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
 
         const ExpenseBreakdown = ({ location, familyKey, children }) => {
             const expenses = EXPENSE_DATA[location]?.[familyKey]?.[Math.min(children, 3)] || [];
@@ -257,38 +205,39 @@
             const total = expenses.reduce((a, b) => a + b, 0);
 
             return (
-                <div className="mt-4">
+                <div className="mt-4 animate-fade-in">
                     <div className="flex justify-between items-end mb-2">
                         <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Annual Expense Breakdown</span>
                         <span className="text-xs text-gray-400">Total: ${total.toLocaleString()}</span>
                     </div>
                     
-                    {/* Stacked Bar */}
-                    <div className="flex h-6 w-full rounded-md overflow-hidden bg-gray-100 dark:bg-gray-700">
+                    <div className="flex h-6 w-full rounded-md overflow-hidden bg-gray-100 dark:bg-gray-700 shadow-inner">
                         {expenses.map((amount, idx) => {
                             const pct = (amount / total) * 100;
-                            if (pct < 1) return null; // Hide tiny segments
+                            if (pct < 1) return null;
                             return (
                                 <div 
                                     key={idx}
-                                    className={`h-full ${EXPENSE_CATEGORIES[idx].color} hover:opacity-80 transition-opacity relative group`}
+                                    className={`h-full ${EXPENSE_CATEGORIES[idx].color} relative group`}
                                     style={{ width: `${pct}%` }}
                                 >
-                                    <div className="opacity-0 group-hover:opacity-100 absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-xs rounded py-1 px-2 whitespace-nowrap z-10 pointer-events-none">
-                                        {EXPENSE_CATEGORIES[idx].name}: ${amount.toLocaleString()} ({Math.round(pct)}%)
-                                        <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
+                                    <div className="opacity-0 group-hover:opacity-100 absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-gray-900 dark:bg-gray-200 text-white dark:text-gray-900 text-[10px] rounded py-1.5 px-3 whitespace-nowrap z-20 pointer-events-none shadow-lg">
+                                        <span className="font-bold">{EXPENSE_CATEGORIES[idx].name}</span>: ${amount.toLocaleString()} ({Math.round(pct)}%)
+                                        <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900 dark:border-t-gray-200"></div>
                                     </div>
                                 </div>
                             );
                         })}
                     </div>
 
-                    {/* Legend */}
-                    <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-2 text-[10px] text-gray-600 dark:text-gray-400">
+                    <div className="mt-3 grid grid-cols-2 gap-y-1.5 gap-x-2 text-[10px] text-gray-600 dark:text-gray-400">
                         {expenses.map((amount, idx) => (
-                            <div key={idx} className="flex items-center gap-1.5">
-                                <div className={`w-2 h-2 rounded-full ${EXPENSE_CATEGORIES[idx].color}`}></div>
-                                <span className="truncate">{EXPENSE_CATEGORIES[idx].name}: <strong>${amount.toLocaleString()}</strong></span>
+                            <div key={idx} className="flex items-start gap-1.5 group cursor-help" title={EXPENSE_CATEGORIES[idx].desc}>
+                                <div className={`w-2 h-2 rounded-full mt-0.5 ${EXPENSE_CATEGORIES[idx].color}`}></div>
+                                <div className="flex flex-col leading-tight">
+                                    <span className="truncate group-hover:text-gray-900 dark:group-hover:text-gray-200 transition-colors">{EXPENSE_CATEGORIES[idx].name}</span>
+                                    <span className="font-mono opacity-75">${amount.toLocaleString()}</span>
+                                </div>
                             </div>
                         ))}
                     </div>
@@ -298,6 +247,9 @@
 
         const App = () => {
             const [darkMode, setDarkMode] = useState(false);
+            const [showMethodology, setShowMethodology] = useState(false);
+            
+            // Calculator State
             const [selectedLocations, setSelectedLocations] = useState([LOCATIONS[0], LOCATIONS[1]]);
             const [adults, setAdults] = useState(1);
             const [working, setWorking] = useState(1);
@@ -306,7 +258,11 @@
             const [customSalary, setCustomSalary] = useState(50000);
             const [showExpenses, setShowExpenses] = useState(true);
 
-            // Dark Mode Logic
+            // Equivalence State
+            const [eqBaseLocation, setEqBaseLocation] = useState(LOCATIONS[0]);
+            const [eqInputType, setEqInputType] = useState("Annual"); // Annual, Monthly, Hourly
+            const [eqAmount, setEqAmount] = useState(50000);
+
             useEffect(() => {
                 const isDark = localStorage.getItem('theme') === 'dark';
                 setDarkMode(isDark);
@@ -343,13 +299,9 @@
                 return "2ABW";
             }, [adults, working]);
 
-            const getSalary = (loc) => {
-                if (occupation === "Custom") return customSalary;
-                return SALARY_DATA[occupation][loc] || 0;
-            };
+            const getSalary = (loc) => occupation === "Custom" ? customSalary : (SALARY_DATA[occupation][loc] || 0);
 
             const getCost = (loc) => {
-                // Cost is sum of expenses including taxes (which matches Required Income Before Taxes)
                 const expenses = EXPENSE_DATA[loc][familyKey][Math.min(children, 3)];
                 return expenses.reduce((a, b) => a + b, 0);
             };
@@ -357,18 +309,41 @@
             const downloadHtml = () => {
                 const htmlContent = document.documentElement.outerHTML;
                 const blob = new Blob([htmlContent], { type: 'text/html' });
-                const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
-                a.href = url;
+                a.href = URL.createObjectURL(blob);
                 a.download = 'cost_of_living_calculator.html';
-                document.body.appendChild(a);
                 a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
+            };
+
+            // --- EQUIVALENCE LOGIC ---
+            const getEquivalenceData = (targetLoc) => {
+                const baseCost = getCost(eqBaseLocation);
+                const targetCost = getCost(targetLoc);
+                const multiplier = targetCost / baseCost;
+                
+                // Convert input to Annual for calculation
+                let annualBase = eqAmount;
+                if (eqInputType === 'Monthly') annualBase = eqAmount * 12;
+                if (eqInputType === 'Hourly') annualBase = eqAmount * 2080;
+
+                const annualTarget = annualBase * multiplier;
+                
+                // Convert back to display preference
+                let displayTarget = annualTarget;
+                if (eqInputType === 'Monthly') displayTarget = annualTarget / 12;
+                if (eqInputType === 'Hourly') displayTarget = annualTarget / 2080;
+
+                return {
+                    value: displayTarget,
+                    multiplier: multiplier,
+                    diff: displayTarget - eqAmount
+                };
             };
 
             return (
                 <div className="min-h-screen p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto font-sans">
+                    <MethodologyModal isOpen={showMethodology} onClose={() => setShowMethodology(false)} />
+
                     {/* Header */}
                     <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 pb-4 border-b border-gray-200 dark:border-gray-700 gap-4">
                         <div>
@@ -376,23 +351,20 @@
                                 <Icons.BarChart className="w-8 h-8 text-indigo-600 dark:text-indigo-400" />
                                 Cost of Living Explorer
                             </h1>
-                            <p className="mt-1 text-gray-500 dark:text-gray-400 text-sm">
-                                Compare income requirements, salaries, and detailed expenses.
-                            </p>
+                            <div className="flex items-center gap-2 mt-1">
+                                <p className="text-gray-500 dark:text-gray-400 text-sm">
+                                    Interactive Comparison & Salary Equivalence
+                                </p>
+                                <button onClick={() => setShowMethodology(true)} className="text-indigo-600 dark:text-indigo-400 text-xs hover:underline flex items-center gap-1">
+                                    <Icons.Info className="w-3 h-3" /> Methodology
+                                </button>
+                            </div>
                         </div>
                         <div className="flex items-center gap-3 self-end sm:self-auto">
-                            <button
-                                onClick={downloadHtml}
-                                className="flex items-center gap-2 px-4 py-2 text-sm font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition-colors shadow-sm"
-                            >
-                                <Icons.Download className="w-4 h-4" />
-                                <span className="hidden sm:inline">Save Offline</span>
+                            <button onClick={downloadHtml} className="flex items-center gap-2 px-4 py-2 text-sm font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition-colors shadow-sm">
+                                <Icons.Download className="w-4 h-4" /> <span className="hidden sm:inline">Save Offline</span>
                             </button>
-                            <button
-                                onClick={toggleTheme}
-                                className="p-2.5 rounded-lg bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-yellow-400 transition-colors shadow-sm"
-                                aria-label="Toggle Theme"
-                            >
+                            <button onClick={toggleTheme} className="p-2.5 rounded-lg bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-yellow-400 transition-colors shadow-sm">
                                 {darkMode ? <Icons.Sun className="w-5 h-5" /> : <Icons.Moon className="w-5 h-5" />}
                             </button>
                         </div>
@@ -400,7 +372,7 @@
 
                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
                         
-                        {/* Sidebar Controls */}
+                        {/* Sidebar */}
                         <div className="lg:col-span-4 space-y-6">
                             
                             {/* Family Config */}
@@ -409,62 +381,36 @@
                                     <Icons.Users className="w-5 h-5 text-indigo-500" />
                                     Family Setup
                                 </h2>
-                                
                                 <div className="space-y-4">
                                     <div>
                                         <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">Adults</label>
                                         <div className="grid grid-cols-2 gap-2">
                                             {[1, 2].map(num => (
-                                                <button
-                                                    key={num}
-                                                    onClick={() => { setAdults(num); if(num===1) setWorking(1); }}
-                                                    className={`py-2 text-sm font-medium rounded-lg border transition-all ${
-                                                        adults === num 
-                                                            ? 'bg-indigo-50 dark:bg-indigo-900/30 border-indigo-500 text-indigo-700 dark:text-indigo-300' 
-                                                            : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
-                                                    }`}
-                                                >
+                                                <button key={num} onClick={() => { setAdults(num); if(num===1) setWorking(1); }} className={`py-2 text-sm font-medium rounded-lg border transition-all ${adults === num ? 'bg-indigo-50 dark:bg-indigo-900/30 border-indigo-500 text-indigo-700 dark:text-indigo-300' : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'}`}>
                                                     {num} Adult{num > 1 && 's'}
                                                 </button>
                                             ))}
                                         </div>
                                     </div>
-
                                     {adults === 2 && (
                                         <div className="animate-fade-in">
                                             <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">Working Adults</label>
                                             <div className="grid grid-cols-2 gap-2">
                                                 {[1, 2].map(num => (
-                                                    <button
-                                                        key={num}
-                                                        onClick={() => setWorking(num)}
-                                                        className={`py-2 text-sm font-medium rounded-lg border transition-all ${
-                                                            working === num 
-                                                                ? 'bg-indigo-50 dark:bg-indigo-900/30 border-indigo-500 text-indigo-700 dark:text-indigo-300' 
-                                                                : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
-                                                        }`}
-                                                    >
+                                                    <button key={num} onClick={() => setWorking(num)} className={`py-2 text-sm font-medium rounded-lg border transition-all ${working === num ? 'bg-indigo-50 dark:bg-indigo-900/30 border-indigo-500 text-indigo-700 dark:text-indigo-300' : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'}`}>
                                                         {num} Working
                                                     </button>
                                                 ))}
                                             </div>
                                         </div>
                                     )}
-
                                     <div>
                                         <div className="flex justify-between mb-2">
                                             <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Children</label>
                                             <span className="text-sm font-bold text-indigo-600 dark:text-indigo-400">{children}</span>
                                         </div>
-                                        <input 
-                                            type="range" min="0" max="3" step="1" 
-                                            value={children}
-                                            onChange={(e) => setChildren(parseInt(e.target.value))}
-                                            className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-indigo-600"
-                                        />
-                                        <div className="flex justify-between text-xs text-gray-400 mt-1 px-1">
-                                            <span>0</span><span>1</span><span>2</span><span>3</span>
-                                        </div>
+                                        <input type="range" min="0" max="3" step="1" value={children} onChange={(e) => setChildren(parseInt(e.target.value))} className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-indigo-600" />
+                                        <div className="flex justify-between text-xs text-gray-400 mt-1 px-1"><span>0</span><span>1</span><span>2</span><span>3</span></div>
                                     </div>
                                 </div>
                             </div>
@@ -473,35 +419,22 @@
                             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-5">
                                 <h2 className="text-lg font-semibold mb-4 flex items-center gap-2 text-gray-900 dark:text-white">
                                     <Icons.Briefcase className="w-5 h-5 text-emerald-500" />
-                                    Job & Salary
+                                    Job & Salary (Reference)
                                 </h2>
-                                
                                 <div className="space-y-4">
                                     <div>
                                         <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">Sector</label>
-                                        <select 
-                                            value={occupation}
-                                            onChange={(e) => setOccupation(e.target.value)}
-                                            className="w-full rounded-lg border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 p-2.5"
-                                        >
+                                        <select value={occupation} onChange={(e) => setOccupation(e.target.value)} className="w-full rounded-lg border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 p-2.5">
                                             <option value="Custom">Custom Salary Input</option>
-                                            {OCCUPATIONS.map(occ => (
-                                                <option key={occ} value={occ}>{occ}</option>
-                                            ))}
+                                            {OCCUPATIONS.map(occ => <option key={occ} value={occ}>{occ}</option>)}
                                         </select>
                                     </div>
-
                                     {occupation === "Custom" && (
                                         <div>
                                             <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">Annual Salary</label>
                                             <div className="relative">
                                                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
-                                                <input
-                                                    type="number"
-                                                    value={customSalary}
-                                                    onChange={(e) => setCustomSalary(Number(e.target.value))}
-                                                    className="w-full pl-7 rounded-lg border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 p-2.5"
-                                                />
+                                                <input type="number" value={customSalary} onChange={(e) => setCustomSalary(Number(e.target.value))} className="w-full pl-7 rounded-lg border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 p-2.5" />
                                             </div>
                                         </div>
                                     )}
@@ -522,16 +455,7 @@
                                         const isSelected = selectedLocations.includes(loc);
                                         const isDisabled = !isSelected && selectedLocations.length >= 3;
                                         return (
-                                            <button
-                                                key={loc}
-                                                onClick={() => toggleLocation(loc)}
-                                                disabled={isDisabled}
-                                                className={`w-full text-left px-3 py-2.5 rounded-lg text-sm transition-all flex justify-between items-center ${
-                                                    isSelected 
-                                                        ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 ring-1 ring-indigo-200 dark:ring-indigo-800' 
-                                                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
-                                                } ${isDisabled ? 'opacity-40 cursor-not-allowed' : ''}`}
-                                            >
+                                            <button key={loc} onClick={() => toggleLocation(loc)} disabled={isDisabled} className={`w-full text-left px-3 py-2.5 rounded-lg text-sm transition-all flex justify-between items-center ${isSelected ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 ring-1 ring-indigo-200 dark:ring-indigo-800' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'} ${isDisabled ? 'opacity-40 cursor-not-allowed' : ''}`}>
                                                 <span>{loc}</span>
                                                 {isSelected && <Icons.Check className="w-4 h-4 text-indigo-500" />}
                                             </button>
@@ -544,6 +468,62 @@
                         {/* Main Analysis */}
                         <div className="lg:col-span-8 space-y-6">
                             
+                            {/* NEW: Equivalence Calculator */}
+                            <div className="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl shadow-lg p-6 text-white">
+                                <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+                                    <Icons.Scale className="w-6 h-6" /> Salary Equivalence Calculator
+                                </h3>
+                                
+                                <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 mb-4 grid grid-cols-1 md:grid-cols-3 gap-4 border border-white/20">
+                                    <div>
+                                        <label className="block text-xs text-indigo-100 mb-1 uppercase tracking-wide">Base Location</label>
+                                        <select value={eqBaseLocation} onChange={(e) => setEqBaseLocation(e.target.value)} className="w-full bg-white/20 border-transparent rounded text-sm text-white focus:bg-white/30 focus:ring-0">
+                                            {LOCATIONS.map(l => <option key={l} value={l} className="text-gray-900">{l}</option>)}
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs text-indigo-100 mb-1 uppercase tracking-wide">Frequency</label>
+                                        <select value={eqInputType} onChange={(e) => setEqInputType(e.target.value)} className="w-full bg-white/20 border-transparent rounded text-sm text-white focus:bg-white/30 focus:ring-0">
+                                            <option value="Hourly" className="text-gray-900">Hourly</option>
+                                            <option value="Monthly" className="text-gray-900">Monthly</option>
+                                            <option value="Annual" className="text-gray-900">Annual</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs text-indigo-100 mb-1 uppercase tracking-wide">Current Amount</label>
+                                        <div className="relative">
+                                            <span className="absolute left-2 top-1/2 -translate-y-1/2 text-indigo-200">$</span>
+                                            <input type="number" value={eqAmount} onChange={(e) => setEqAmount(Number(e.target.value))} className="w-full bg-white/20 border-transparent rounded text-sm text-white pl-6 focus:bg-white/30 focus:ring-0" placeholder="0.00" />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <p className="text-sm text-indigo-100 mb-2">To maintain the same standard of living as <span className="font-bold text-white">${eqAmount.toLocaleString()}</span> in <span className="font-bold text-white">{eqBaseLocation}</span>, you need:</p>
+                                    
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                        {selectedLocations.filter(l => l !== eqBaseLocation).map(loc => {
+                                            const data = getEquivalenceData(loc);
+                                            const isHigher = data.diff > 0;
+                                            return (
+                                                <div key={loc} className="bg-white rounded-lg p-3 text-gray-900 flex justify-between items-center shadow-md">
+                                                    <div>
+                                                        <span className="block text-xs font-semibold text-gray-500">{loc}</span>
+                                                        <span className="text-lg font-bold text-indigo-900">${data.value.toLocaleString(undefined, {maximumFractionDigits: 0})}</span>
+                                                    </div>
+                                                    <div className={`text-xs px-2 py-1 rounded font-bold ${isHigher ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700'}`}>
+                                                        {isHigher ? '+' : ''}{data.diff.toLocaleString(undefined, {maximumFractionDigits: 0})}
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                        {selectedLocations.filter(l => l !== eqBaseLocation).length === 0 && (
+                                            <div className="text-sm italic text-indigo-200 opacity-70">Select more locations to compare purchasing power...</div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+
                             {/* Comparison Cards */}
                             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                                 {selectedLocations.map(loc => {
@@ -553,7 +533,7 @@
                                     const isSurplus = surplus >= 0;
 
                                     return (
-                                        <div key={loc} className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-5 relative overflow-hidden flex flex-col">
+                                        <div key={loc} className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-5 relative overflow-hidden flex flex-col transition-all hover:shadow-md">
                                             <div className={`absolute top-0 left-0 w-1.5 h-full ${isSurplus ? 'bg-emerald-500' : 'bg-rose-500'}`}></div>
                                             
                                             <h3 className="font-bold text-gray-900 dark:text-white truncate mb-4 pl-2" title={loc}>{loc}</h3>
@@ -577,24 +557,16 @@
 
                                             <div className="pt-4 border-t border-gray-100 dark:border-gray-700 pl-2">
                                                 <div className="flex justify-between items-center mb-2">
-                                                    <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                                                        Net Balance
-                                                    </span>
+                                                    <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Net Balance</span>
                                                     <span className={`text-sm font-bold ${isSurplus ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
                                                         {isSurplus ? '+' : ''}{surplus.toLocaleString()}
                                                     </span>
                                                 </div>
-                                                
-                                                {/* Mini Bar */}
                                                 <div className="w-full bg-gray-100 dark:bg-gray-700 rounded-full h-1.5">
-                                                    <div 
-                                                        className={`h-1.5 rounded-full transition-all duration-500 ${isSurplus ? 'bg-emerald-500' : 'bg-rose-500'}`} 
-                                                        style={{width: `${Math.min((Math.abs(surplus) / required) * 100, 100)}%`}}
-                                                    ></div>
+                                                    <div className={`h-1.5 rounded-full transition-all duration-500 ${isSurplus ? 'bg-emerald-500' : 'bg-rose-500'}`} style={{width: `${Math.min((Math.abs(surplus) / required) * 100, 100)}%`}}></div>
                                                 </div>
                                             </div>
 
-                                            {/* Expense Breakdown */}
                                             {showExpenses && <ExpenseBreakdown location={loc} familyKey={familyKey} children={children} />}
                                         </div>
                                     );
@@ -605,17 +577,12 @@
                             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
                                 <div className="flex justify-between items-center mb-6">
                                     <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                                        <Icons.PieChart className="w-5 h-5 text-indigo-500" />
-                                        Comparison Visualization
+                                        <Icons.PieChart className="w-5 h-5 text-indigo-500" /> Comparison Visualization
                                     </h3>
-                                    <button 
-                                        onClick={() => setShowExpenses(!showExpenses)}
-                                        className="text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 font-medium"
-                                    >
-                                        {showExpenses ? "Hide Details" : "Show Expense Details"}
+                                    <button onClick={() => setShowExpenses(!showExpenses)} className="text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 font-medium border border-indigo-200 dark:border-indigo-800 px-3 py-1 rounded-full transition-colors">
+                                        {showExpenses ? "Hide Breakdown" : "Show Breakdown"}
                                     </button>
                                 </div>
-                                
                                 <div className="space-y-6">
                                     {selectedLocations.map(loc => {
                                         const required = getCost(loc);
@@ -623,41 +590,25 @@
                                         const maxVal = Math.max(...selectedLocations.map(l => Math.max(getCost(l), getSalary(l)))) * 1.15;
                                         const reqPct = (required / maxVal) * 100;
                                         const salPct = (salary / maxVal) * 100;
-
                                         return (
                                             <div key={loc} className="relative group">
                                                 <div className="flex justify-between text-sm mb-1.5">
                                                     <span className="font-semibold text-gray-700 dark:text-gray-200">{loc}</span>
                                                 </div>
-                                                
                                                 <div className="relative h-20 bg-gray-50 dark:bg-gray-900/50 rounded-lg border border-gray-100 dark:border-gray-700 p-3 flex flex-col justify-center space-y-3">
-                                                    
-                                                    {/* Cost Bar */}
                                                     <div className="flex items-center">
                                                         <div className="w-16 text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wider font-medium hidden sm:block">Needed</div>
                                                         <div className="flex-grow">
-                                                            <div 
-                                                                className="h-3 bg-gray-400/80 dark:bg-gray-600 rounded-r-full relative chart-bar-animate flex items-center"
-                                                                style={{width: `${reqPct}%`}}
-                                                            >
-                                                                <span className="absolute right-0 translate-x-full pl-2 text-xs font-bold text-gray-500 dark:text-gray-400">
-                                                                    ${required.toLocaleString()}
-                                                                </span>
+                                                            <div className="h-3 bg-gray-400/80 dark:bg-gray-600 rounded-r-full relative chart-bar-animate flex items-center" style={{width: `${reqPct}%`}}>
+                                                                <span className="absolute right-0 translate-x-full pl-2 text-xs font-bold text-gray-500 dark:text-gray-400">${required.toLocaleString()}</span>
                                                             </div>
                                                         </div>
                                                     </div>
-
-                                                    {/* Salary Bar */}
                                                     <div className="flex items-center">
                                                         <div className="w-16 text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wider font-medium hidden sm:block">Income</div>
                                                         <div className="flex-grow">
-                                                            <div 
-                                                                className={`h-3 rounded-r-full relative chart-bar-animate flex items-center ${salary >= required ? 'bg-emerald-500' : 'bg-rose-500'}`}
-                                                                style={{width: `${salPct}%`}}
-                                                            >
-                                                                <span className={`absolute right-0 translate-x-full pl-2 text-xs font-bold ${salary >= required ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
-                                                                    ${salary.toLocaleString()}
-                                                                </span>
+                                                            <div className={`h-3 rounded-r-full relative chart-bar-animate flex items-center ${salary >= required ? 'bg-emerald-500' : 'bg-rose-500'}`} style={{width: `${salPct}%`}}>
+                                                                <span className={`absolute right-0 translate-x-full pl-2 text-xs font-bold ${salary >= required ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>${salary.toLocaleString()}</span>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -667,7 +618,6 @@
                                     })}
                                 </div>
                             </div>
-
                         </div>
                     </div>
                     
